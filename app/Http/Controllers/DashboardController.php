@@ -23,6 +23,8 @@ class DashboardController extends Controller
             'salesByUser' => $this->dashboardService->getSalesByUser(),
             'recentInvoices' => $this->dashboardService->getRecentInvoices(),
             'stockAlerts' => $this->dashboardService->getStockAlerts(),
+            'salesTypeBreakdown' => $this->dashboardService->getSalesTypeBreakdown(),
+            'recentStockMovements' => $this->dashboardService->getRecentStockMovements(),
         ]);
     }
 }

@@ -156,8 +156,16 @@ class SaleService
             if ($sale->status === SaleStatus::Validated) {
                 $this->applyStockChanges($sale);
 
-                if (!$sale->invoice()->exists()) {
+                $invoice = $sale->invoice;
+                if ($invoice === null) {
                     $this->invoiceService->createFromSale($sale);
+                } else {
+                    // La facture existe déjà : on resynchronise ses montants sur
+                    // ceux de la vente (ex: montant ajouté modifié lors d'un échange).
+                    $this->invoiceService->update($invoice, [
+                        'subtotal_ht' => $sale->subtotal_ht,
+                        'total_ttc' => $sale->total_ttc,
+                    ]);
                 }
             }
 

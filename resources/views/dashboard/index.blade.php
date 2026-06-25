@@ -30,6 +30,10 @@
       ['label' => 'Impayés', 'value' => $stats['pending_invoices_count'], 'icon' => 'bi-hourglass-split', 'color' => 'bg-warning bg-opacity-10 text-warning'],
       ['label' => 'Clients', 'value' => $stats['customers_count'], 'icon' => 'bi-people', 'color' => 'bg-primary bg-opacity-10 text-primary'],
       ['label' => 'Nouveaux clients (mois)', 'value' => $stats['new_customers_month'], 'icon' => 'bi-person-plus', 'color' => 'bg-info bg-opacity-10 text-info'],
+      ['label' => 'Valeur du stock', 'value' => number_format($stats['stock_value'], 0, ',', ' ') . ' FCFA', 'icon' => 'bi-box-seam', 'color' => 'bg-secondary bg-opacity-10 text-secondary'],
+      ['label' => 'Panier moyen (mois)', 'value' => number_format($stats['average_sale_amount'], 0, ',', ' ') . ' FCFA', 'icon' => 'bi-basket3', 'color' => 'bg-primary bg-opacity-10 text-primary'],
+      ['label' => 'Marge brute (mois)', 'value' => number_format($stats['margin_month'], 0, ',', ' ') . ' FCFA', 'icon' => 'bi-graph-up', 'color' => 'bg-success bg-opacity-10 text-success'],
+      ['label' => 'Échanges (mois)', 'value' => $stats['exchanges_count_month'], 'icon' => 'bi-arrow-left-right', 'color' => 'bg-warning bg-opacity-10 text-warning'],
     ];
   @endphp
 
@@ -73,7 +77,58 @@
       <canvas id="invoiceStatusChart" height="260"></canvas>
     </div>
   </div>
-  <div class="col-lg-8">
+  <div class="col-lg-4">
+    <div class="chart-card h-100">
+      <div class="card-title"><i class="bi bi-arrow-left-right me-2"></i>Ventes vs Échanges (12 mois)</div>
+      <canvas id="salesTypeChart" height="260"></canvas>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="table-card h-100">
+      <div class="p-3 border-bottom">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-arrow-down-up me-2"></i>Derniers mouvements de stock</h6>
+      </div>
+      <div class="table-responsive" style="max-height: 320px;">
+        <table class="table table-hover mb-0 small">
+          <thead>
+            <tr>
+              <th>Produit</th>
+              <th>Type</th>
+              <th class="text-end">Qté</th>
+            </tr>
+          </thead>
+          <tbody>
+            @forelse($recentStockMovements as $movement)
+              <tr>
+                <td>{{ $movement->product?->name ?? '—' }}</td>
+                <td>
+                  @php
+                    $movementBadge = match($movement->type->value ?? $movement->type) {
+                      'entry' => 'bg-success',
+                      'exit' => 'bg-danger',
+                      'sale' => 'bg-primary',
+                      'return' => 'bg-warning text-dark',
+                      default => 'bg-secondary',
+                    };
+                  @endphp
+                  <span class="badge {{ $movementBadge }}">{{ $movement->type->label() }}</span>
+                </td>
+                <td class="text-end">{{ $movement->quantity_before }} → {{ $movement->quantity_after }}</td>
+              </tr>
+            @empty
+              <tr>
+                <td colspan="3" class="text-center text-muted py-4">Aucun mouvement de stock</td>
+              </tr>
+            @endforelse
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-12">
     <div class="table-card h-100">
       <div class="p-3 border-bottom">
         <h6 class="mb-0 fw-semibold"><i class="bi bi-clock-history me-2"></i>Factures récentes</h6>
@@ -324,6 +379,27 @@
       datasets: [{
         data: invoiceData.length ? invoiceData : [1],
         backgroundColor: invoiceLabels.length ? invoiceColors.slice(0, invoiceLabels.length) : ['#e2e8f0'],
+      }]
+    },
+    options: {
+      ...chartDefaults,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+      }
+    }
+  });
+
+  // Ventes vs Échanges
+  const salesTypeLabels = @json($salesTypeBreakdown['labels']);
+  const salesTypeData = @json($salesTypeBreakdown['data']);
+
+  new Chart(document.getElementById('salesTypeChart'), {
+    type: 'doughnut',
+    data: {
+      labels: salesTypeLabels,
+      datasets: [{
+        data: salesTypeData.some(v => v > 0) ? salesTypeData : [1, 0],
+        backgroundColor: ['#0d6efd', '#fd7e14'],
       }]
     },
     options: {

@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Services\SaleService;
+use App\Services\WhatsAppService;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -18,8 +19,10 @@ use Illuminate\View\View;
 
 class SaleController extends Controller
 {
-    public function __construct(private readonly SaleService $saleService)
-    {
+    public function __construct(
+        private readonly SaleService $saleService,
+        private readonly WhatsAppService $whatsAppService
+    ) {
     }
 
     public function index(Request $request): View
@@ -150,8 +153,10 @@ class SaleController extends Controller
         abort_unless($sale->isEchange(), 404);
 
         $sale->load(['customer', 'user', 'items.product']);
+        $invoice = null;
+        $downloadUrl = route('sales.exchange-voucher.download', $sale);
 
-        return view('sales.exchange_voucher', compact('sale'));
+        return view('documents.sale_document', compact('sale', 'invoice', 'downloadUrl'));
     }
 
     /**
@@ -162,8 +167,10 @@ class SaleController extends Controller
         abort_unless($sale->isEchange(), 404);
 
         $sale->load(['customer', 'user', 'items.product']);
+        $invoice = null;
+        $downloadUrl = null;
 
-        $pdf = PDF::loadView('sales.exchange_voucher', compact('sale'))
+        $pdf = PDF::loadView('documents.sale_document', compact('sale', 'invoice', 'downloadUrl'))
             ->setPaper('a4', 'portrait')
             ->setOption('defaultFont', 'DejaVu Sans')
             ->setOption('isHtml5ParserEnabled', true);
@@ -175,5 +182,55 @@ class SaleController extends Controller
             'Content-Type' => 'application/pdf; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"{$fileName}\"",
         ]);
+    }
+
+    /**
+     * Envoie le bon d'échange au client via WhatsApp.
+     */
+    public function sendExchangeVoucherWhatsApp(Sale $sale): RedirectResponse
+    {
+        $built = $this->buildExchangeVoucherWhatsAppPayload($sale);
+
+        if ($built['waUrl'] === null) {
+            return back()->with('error', "Le client n'a pas de numéro WhatsApp valide (format sénégalais +221 attendu).");
+        }
+
+        return redirect()->away($built['waUrl']);
+    }
+
+    /**
+     * Retourne le message, le lien wa.me et l'URL du PDF réel du bon
+     * d'échange, utilisé par le bouton de partage WhatsApp côté navigateur
+     * pour tenter un partage natif du fichier PDF.
+     */
+    public function exchangeVoucherWhatsAppPayload(Sale $sale): JsonResponse
+    {
+        $built = $this->buildExchangeVoucherWhatsAppPayload($sale);
+
+        if ($built['waUrl'] === null) {
+            return response()->json([
+                'error' => "Le client n'a pas de numéro WhatsApp valide (format sénégalais +221 attendu).",
+            ], 422);
+        }
+
+        return response()->json($built);
+    }
+
+    private function buildExchangeVoucherWhatsAppPayload(Sale $sale): array
+    {
+        abort_unless($sale->isEchange(), 404);
+
+        $sale->load('customer');
+
+        $pdfUrl = route('sales.exchange-voucher.download', $sale);
+        $message = $this->whatsAppService->buildMessage($sale, "bon d'échange", $sale->exchange_voucher_number, $pdfUrl);
+        $waUrl = $this->whatsAppService->buildLink($sale->customer?->phone, $message);
+
+        return [
+            'message' => $message,
+            'pdfUrl' => $pdfUrl,
+            'waUrl' => $waUrl,
+            'fileName' => $sale->exchange_voucher_number . '.pdf',
+        ];
     }
 }

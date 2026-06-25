@@ -4,11 +4,13 @@ namespace App\Services;
 
 use App\Enums\InvoiceStatus;
 use App\Enums\SaleStatus;
+use App\Enums\SaleType;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\StockMovement;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -24,9 +26,20 @@ class DashboardService
 
         $validatedSales = Sale::validated();
 
+        $salesCountMonth = (clone $validatedSales)->where('sale_date', '>=', $startOfMonth)->count();
+        $revenueMonth = (float) (clone $validatedSales)->where('sale_date', '>=', $startOfMonth)->sum('total_ttc');
+
+        $marginMonth = (float) SaleItem::query()
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->join('products', 'sale_items.product_id', '=', 'products.id')
+            ->where('sales.status', SaleStatus::Validated->value)
+            ->where('sales.sale_type', SaleType::Vente->value)
+            ->where('sales.sale_date', '>=', $startOfMonth)
+            ->sum(DB::raw('(sale_items.unit_price - products.purchase_price) * sale_items.quantity'));
+
         return [
             'revenue_today' => (float) (clone $validatedSales)->forDate($today)->sum('total_ttc'),
-            'revenue_month' => (float) (clone $validatedSales)->where('sale_date', '>=', $startOfMonth)->sum('total_ttc'),
+            'revenue_month' => $revenueMonth,
             'sales_count' => Sale::validated()->count(),
             'invoices_count' => Invoice::count(),
             'paid_invoices_count' => Invoice::where('status', InvoiceStatus::Paid)->count(),
@@ -37,6 +50,15 @@ class DashboardService
             'customers_count' => Customer::count(),
             'new_customers_month' => Customer::where('registered_at', '>=', $startOfMonth)->count(),
             'new_customers_today' => Customer::whereDate('registered_at', $today)->count(),
+
+            // ── Statistiques additionnelles ──
+            'stock_value' => (float) Product::query()->sum(DB::raw('stock_quantity * purchase_price')),
+            'average_sale_amount' => $salesCountMonth > 0 ? round($revenueMonth / $salesCountMonth, 2) : 0.0,
+            'exchanges_count_month' => (clone $validatedSales)
+                ->where('sale_type', SaleType::Echange)
+                ->where('sale_date', '>=', $startOfMonth)
+                ->count(),
+            'margin_month' => $marginMonth,
         ];
     }
 
@@ -169,6 +191,41 @@ class DashboardService
             )
             ->groupBy('products.id', 'products.name')
             ->orderByDesc('total_qty')
+            ->limit($limit)
+            ->get()
+            ->all();
+    }
+
+    /**
+     * Répartition des ventes validées entre ventes classiques et échanges (sur les 12 derniers mois).
+     */
+    public function getSalesTypeBreakdown(): array
+    {
+        $start = Carbon::now()->subMonths(11)->startOfMonth();
+
+        $rows = Sale::validated()
+            ->where('sale_date', '>=', $start)
+            ->select('sale_type', DB::raw('COUNT(*) as count'))
+            ->groupBy('sale_type')
+            ->get();
+
+        $venteCount = (int) ($rows->first(fn ($r) => $r->sale_type === SaleType::Vente)?->count ?? 0);
+        $echangeCount = (int) ($rows->first(fn ($r) => $r->sale_type === SaleType::Echange)?->count ?? 0);
+
+        return [
+            'labels' => ['Ventes', 'Échanges'],
+            'data' => [$venteCount, $echangeCount],
+        ];
+    }
+
+    /**
+     * Derniers mouvements de stock enregistrés (entrées, sorties, retours d'échange...).
+     */
+    public function getRecentStockMovements(int $limit = 8): array
+    {
+        return StockMovement::query()
+            ->with('product')
+            ->latest()
             ->limit($limit)
             ->get()
             ->all();

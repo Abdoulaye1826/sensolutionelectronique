@@ -1,0 +1,451 @@
+/* ============================================================
+   SEN SOLUTION ELECTRONIQUE SI — UI des formulaires (ajout/modif)
+   S'appuie sur les variables de design définies dans dashboard.css
+   (--copper, --ink, --surface, --card, --border, --font-*…).
+   N'affecte ni .top-navbar ni .sidebar : ce fichier ne déclare
+   aucune règle sur ces sélecteurs.
+   ============================================================ */
+
+/* ── Conteneur centré, responsive ───────────────────────────── */
+.form-shell {
+    max-width: 880px;
+    margin: 0 auto;
+}
+
+.form-shell--wide {
+    max-width: 1100px;
+}
+
+/* ── Card principale du formulaire ──────────────────────────── */
+.form-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, .05);
+    overflow: hidden;
+}
+
+.form-card__header {
+    padding: 1.5rem 1.75rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(217, 119, 6, .04), transparent);
+}
+
+.form-card__header h2 {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 .25rem;
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+}
+
+.form-card__header h2 i {
+    color: var(--copper);
+    font-size: 1.15rem;
+}
+
+.form-card__subtitle {
+    color: var(--text-muted);
+    font-size: .85rem;
+    margin: 0;
+}
+
+.form-card__body {
+    padding: 1.5rem 1.75rem;
+}
+
+.form-card__footer {
+    padding: 1.1rem 1.75rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: .6rem;
+    flex-wrap: wrap;
+}
+
+/* ── Sections repliables (accordéon léger) ──────────────────── */
+.form-section {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 1.1rem;
+    overflow: hidden;
+    transition: box-shadow .2s;
+}
+
+.form-section:hover {
+    box-shadow: 0 4px 16px rgba(15, 23, 42, .04);
+}
+
+.form-section__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    width: 100%;
+    padding: .9rem 1.1rem;
+    background: var(--surface);
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: .95rem;
+    color: var(--text);
+    transition: background-color .15s;
+}
+
+.form-section__header:hover { background: #eef0f6; }
+
+.form-section__header .form-section__title {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+}
+
+.form-section__title i { color: var(--copper); font-size: 1.05rem; }
+
+.form-section__header .chevron {
+    transition: transform .25s ease;
+    color: var(--text-muted);
+}
+
+.form-section__header[aria-expanded="true"] .chevron {
+    transform: rotate(180deg);
+}
+
+.form-section__body {
+    padding: 1.25rem 1.1rem 1.4rem;
+}
+
+.form-section__badge {
+    font-size: .68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--copper);
+    background: var(--copper-soft);
+    border-radius: 999px;
+    padding: .2rem .55rem;
+}
+
+/* ── Champs ──────────────────────────────────────────────────── */
+.field-group {
+    margin-bottom: 1.15rem;
+}
+
+.field-group label.form-label {
+    font-weight: 600;
+    font-size: .85rem;
+    color: var(--text);
+    margin-bottom: .4rem;
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+}
+
+.field-group label.form-label .req { color: var(--danger); }
+
+.field-group .form-text {
+    font-size: .78rem;
+    color: var(--text-muted);
+    margin-top: .3rem;
+}
+
+.field-input-wrap {
+    position: relative;
+}
+
+.field-input-wrap > i.field-icon {
+    position: absolute;
+    left: .85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-faint);
+    font-size: .9rem;
+    pointer-events: none;
+}
+
+.field-input-wrap > .form-control.has-icon,
+.field-input-wrap > .form-select.has-icon {
+    padding-left: 2.3rem;
+}
+
+/* Focus / hover micro-interactions, cohérentes avec --copper */
+.form-control,
+.form-select {
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    padding: .55rem .85rem;
+    font-size: .92rem;
+    transition: border-color .15s, box-shadow .15s, transform .08s;
+}
+
+.form-control:hover,
+.form-select:hover {
+    border-color: #c9ccd9;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--copper);
+    box-shadow: 0 0 0 3px var(--copper-soft);
+}
+
+/* États de validation temps réel (ajoutés en JS : .is-valid / .is-invalid) */
+.form-control.is-valid,
+.form-select.is-valid {
+    border-color: var(--success);
+    background-image: none;
+}
+
+.field-input-wrap .valid-feedback-icon,
+.field-input-wrap .invalid-feedback-icon {
+    position: absolute;
+    right: .75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: .95rem;
+    display: none;
+}
+
+.form-control.is-valid ~ .valid-feedback-icon,
+.form-select.is-valid ~ .valid-feedback-icon { display: inline-block; color: var(--success); }
+
+.form-control.is-invalid ~ .invalid-feedback-icon,
+.form-select.is-invalid ~ .invalid-feedback-icon { display: inline-block; color: var(--danger); }
+
+.invalid-feedback {
+    font-size: .78rem;
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+}
+
+.invalid-feedback::before {
+    content: "\F33B"; /* bootstrap-icons exclamation-circle */
+    font-family: "bootstrap-icons";
+}
+
+/* ── Boutons coordonnés avec l'accent du navbar (--copper) ──── */
+.page-content .btn-primary {
+    background-color: var(--copper);
+    border-color: var(--copper);
+    color: #fff;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: .55rem 1.3rem;
+    transition: background-color .15s, box-shadow .15s, transform .08s;
+}
+
+.page-content .btn-primary:hover,
+.page-content .btn-primary:focus {
+    background-color: var(--copper-dark);
+    border-color: var(--copper-dark);
+    box-shadow: 0 6px 16px rgba(217, 119, 6, .28);
+}
+
+.page-content .btn-primary:active {
+    transform: translateY(1px) scale(.99);
+}
+
+.page-content .btn-outline-secondary {
+    border-radius: 10px;
+    font-weight: 500;
+    border-color: var(--border);
+    color: var(--text-muted);
+    transition: background-color .15s, color .15s, border-color .15s;
+}
+
+.page-content .btn-outline-secondary:hover {
+    background-color: var(--surface);
+    color: var(--text);
+    border-color: #c9ccd9;
+}
+
+.page-content .btn:disabled,
+.page-content .btn.is-loading {
+    opacity: .7;
+    pointer-events: none;
+}
+
+/* ── Spinner inline pour bouton en cours de soumission ──────── */
+.btn-spinner {
+    width: .9rem;
+    height: .9rem;
+    border: 2px solid rgba(255, 255, 255, .5);
+    border-top-color: #fff;
+    border-radius: 50%;
+    display: inline-block;
+    animation: btnSpin .6s linear infinite;
+    margin-right: .4rem;
+    vertical-align: -1px;
+}
+
+@keyframes btnSpin { to { transform: rotate(360deg); } }
+
+/* ── Select "recherchable" ───────────────────────────────────── */
+.searchable-select {
+    position: relative;
+}
+
+.searchable-select input[data-select-filter] {
+    margin-bottom: .35rem;
+}
+
+.searchable-select select {
+    position: relative;
+}
+
+.searchable-select.is-expanded select {
+    position: absolute;
+    top: calc(100% - .35rem);
+    left: 0;
+    right: 0;
+    z-index: 20;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, .14);
+}
+
+/* ── Uploader d'image avec preview et drag-and-drop ─────────── */
+.image-dropzone {
+    border: 2px dashed var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, background-color .15s;
+    position: relative;
+}
+
+.image-dropzone:hover,
+.image-dropzone:focus-visible {
+    border-color: var(--copper);
+    background: var(--copper-soft);
+}
+
+.image-dropzone.is-dragover {
+    border-color: var(--copper);
+    background: var(--copper-soft);
+}
+
+.image-dropzone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.image-dropzone__icon {
+    font-size: 1.8rem;
+    color: var(--copper);
+    margin-bottom: .4rem;
+}
+
+.image-dropzone__text {
+    font-size: .85rem;
+    color: var(--text-muted);
+}
+
+.image-dropzone__text strong { color: var(--text); }
+
+.image-preview {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: .9rem;
+}
+
+.image-preview img {
+    width: 84px;
+    height: 84px;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, .08);
+}
+
+.image-preview__remove {
+    font-size: .8rem;
+    color: var(--danger);
+    background: var(--danger-soft);
+    border: none;
+    border-radius: 8px;
+    padding: .35rem .7rem;
+    cursor: pointer;
+    transition: background-color .15s;
+}
+
+.image-preview__remove:hover { background: rgba(185, 28, 28, .2); }
+
+/* ── Toast de confirmation ───────────────────────────────────── */
+.ui-toast-stack {
+    position: fixed;
+    top: 1.25rem;
+    right: 1.25rem;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+    max-width: 360px;
+}
+
+.ui-toast {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--copper);
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, .14);
+    padding: .8rem 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: .6rem;
+    font-size: .85rem;
+    color: var(--text);
+    animation: toastIn .25s ease-out;
+}
+
+.ui-toast.ui-toast--success { border-left-color: var(--success); }
+.ui-toast.ui-toast--error { border-left-color: var(--danger); }
+
+.ui-toast i { font-size: 1.1rem; margin-top: .05rem; }
+.ui-toast.ui-toast--success i { color: var(--success); }
+.ui-toast.ui-toast--error i { color: var(--danger); }
+.ui-toast:not(.ui-toast--success):not(.ui-toast--error) i { color: var(--copper); }
+
+.ui-toast.is-leaving {
+    animation: toastOut .2s ease-in forwards;
+}
+
+@keyframes toastIn {
+    from { opacity: 0; transform: translateY(-8px) scale(.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes toastOut {
+    to { opacity: 0; transform: translateY(-8px) scale(.97); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ui-toast, .btn-spinner, .form-section__header .chevron { animation: none !important; transition: none !important; }
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 575.98px) {
+    .form-card__header,
+    .form-card__body,
+    .form-card__footer {
+        padding-left: 1.1rem;
+        padding-right: 1.1rem;
+    }
+
+    .ui-toast-stack {
+        left: 1rem;
+        right: 1rem;
+        max-width: none;
+    }
+}

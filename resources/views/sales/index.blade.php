@@ -88,6 +88,10 @@
                 <a href="{{ route('sales.exchange-voucher.print', $sale) }}" class="btn btn-sm btn-outline-secondary" title="Bon d'échange" target="_blank">
                   <i class="bi bi-receipt"></i>
                 </a>
+                <button type="button" class="btn btn-sm btn-outline-success js-whatsapp-share" title="Envoyer le PDF par WhatsApp"
+                        data-payload-url="{{ route('sales.exchange-voucher.whatsapp.payload', $sale) }}">
+                  <i class="bi bi-whatsapp"></i>
+                </button>
               @endif
               <a href="{{ route('sales.edit', $sale) }}" class="btn btn-sm btn-outline-primary" title="Modifier">
                 <i class="bi bi-pencil"></i>
@@ -110,4 +114,8 @@
   </div>
   <div class="p-3 border-top">{{ $sales->links() }}</div>
 </div>
+
+@push('scripts')
+  @include('partials.whatsapp-share-script')
+@endpush
 @endsection

@@ -117,9 +117,10 @@
               {{-- <a href="{{ route('invoices.download', $invoice) }}" class="btn btn-sm btn-outline-dark" title="PDF">
                 <i class="bi bi-file-earmark-pdf"></i>
               </a> --}}
-              <a href="{{ route('invoices.whatsapp', $invoice) }}" target="_blank" class="btn btn-sm btn-outline-success" title="WhatsApp">
+              <button type="button" class="btn btn-sm btn-outline-success js-whatsapp-share" title="Envoyer le PDF par WhatsApp"
+                      data-payload-url="{{ route('invoices.whatsapp.payload', $invoice) }}">
                 <i class="bi bi-whatsapp"></i>
-              </a>
+              </button>
               <a href="{{ route('invoices.edit', $invoice) }}" class="btn btn-sm btn-outline-primary" title="Modifier">
                 <i class="bi bi-pencil"></i>
               </a>
@@ -141,4 +142,8 @@
   </div>
   <div class="p-3 border-top">{{ $invoices->links() }}</div>
 </div>
+
+@push('scripts')
+  @include('partials.whatsapp-share-script')
+@endpush
 @endsection
