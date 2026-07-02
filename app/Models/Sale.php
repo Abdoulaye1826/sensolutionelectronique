@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\InvoiceStatus;
 use App\Enums\SaleStatus;
 use App\Enums\SaleType;
+use App\Enums\WarrantyDuration;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -31,6 +33,8 @@ class Sale extends Model
         'notes',
         'exchange_voucher_number',
         'exchange_details',
+        'warranty_duration',
+        'warranty_end_date',
     ];
 
     protected $casts = [
@@ -42,6 +46,8 @@ class Sale extends Model
         'total_ttc' => 'decimal:2',
         'exchange_details' => 'array',
         'status' => SaleStatus::class,
+        'warranty_duration' => WarrantyDuration::class,
+        'warranty_end_date' => 'date',
     ];
 
     // ─── Relations ───────────────────────────────────────────
@@ -83,6 +89,18 @@ class Sale extends Model
     public function scopeValidated($query)
     {
         return $query->where('status', SaleStatus::Validated);
+    }
+
+    /**
+     * Ventes qui doivent compter dans le chiffre d'affaires : validées ET
+     * dont la facture n'a pas été annulée entre-temps (une vente reste
+     * "validated" même si sa facture est annulée a posteriori — ce scope
+     * exclut ce cas des statistiques financières).
+     */
+    public function scopeRevenueEligible($query)
+    {
+        return $query->validated()
+            ->whereDoesntHave('invoice', fn ($q) => $q->where('status', InvoiceStatus::Cancelled->value));
     }
 
     public function scopeDraft($query)
@@ -136,5 +154,18 @@ class Sale extends Model
     public function isEchange(): bool
     {
         return $this->sale_type === SaleType::Echange;
+    }
+
+    /**
+     * 'active'/'expired' selon la date du jour, ou null si aucune garantie
+     * n'a été choisie pour cette vente (ou pas encore de date de fin).
+     */
+    public function warrantyStatus(): ?string
+    {
+        if ($this->warranty_duration === null || $this->warranty_duration === WarrantyDuration::None || $this->warranty_end_date === null) {
+            return null;
+        }
+
+        return $this->warranty_end_date->isFuture() || $this->warranty_end_date->isToday() ? 'active' : 'expired';
     }
 }

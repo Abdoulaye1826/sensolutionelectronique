@@ -15,6 +15,7 @@ use App\Http\Controllers\SaleController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\WarrantyController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -24,6 +25,16 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', fn () => redirect()->route('login'));
+
+// ── Documents partagés publiquement (liens signés, sans authentification) ──
+// Utilisés par le bouton WhatsApp pour que le client ouvre directement le
+// PDF (facture ou bon d'échange) sans être redirigé vers la page de
+// connexion. Le middleware "signed" garantit qu'un lien ne peut pas être
+// deviné ou modifié pour accéder à un autre document.
+Route::get('invoices/{invoice}/public-pdf', [InvoiceController::class, 'publicPdf'])
+    ->name('invoices.public-pdf')->middleware('signed');
+Route::get('sales/{sale}/exchange-voucher/public-pdf', [SaleController::class, 'publicExchangeVoucherPdf'])
+    ->name('sales.exchange-voucher.public-pdf')->middleware('signed');
 
 Route::middleware(['auth', 'active'])->group(function () {
 
@@ -73,6 +84,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('invoices/{invoice}/download', [InvoiceController::class, 'download'])->name('invoices.download');
         Route::get('invoices/{invoice}/whatsapp-payload', [InvoiceController::class, 'whatsAppPayload'])->name('invoices.whatsapp.payload');
         Route::get('invoices/{invoice}/whatsapp', [InvoiceController::class, 'sendWhatsApp'])->name('invoices.whatsapp');
+        Route::post('invoices/{invoice}/email', [InvoiceController::class, 'sendEmail'])->name('invoices.email');
 
         // ── Paiements de factures ─────────────────────────────
         Route::post('invoices/{invoice}/payments', [PaymentController::class, 'store'])->name('invoices.payments.store');
@@ -81,6 +93,9 @@ Route::middleware(['auth', 'active'])->group(function () {
         // ── Gestion des retours ──────────────────────────────
         Route::get('returns', [ReturnController::class, 'index'])->name('returns.index');
         Route::post('returns/{saleItem}', [ReturnController::class, 'store'])->name('returns.store');
+
+        // ── Garanties ─────────────────────────────────────────
+        Route::get('warranties', [WarrantyController::class, 'index'])->name('warranties.index');
     });
 
     // ── Utilisateurs (Admin et Gestionnaire) ─────────────────

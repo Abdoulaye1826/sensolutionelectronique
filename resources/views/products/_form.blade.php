@@ -40,7 +40,7 @@
         </div>
         <div class="col-md-5 field-group mb-0">
           <label class="form-label">Suivi IMEI</label>
-          <div class="form-check form-switch fs-6 ps-1">
+          <div class="form-check form-switch fs-6 ps-5">
             <input class="form-check-input" type="checkbox" id="tracks_imei" name="tracks_imei" value="1" role="switch"
                    {{ old('tracks_imei', $product->tracks_imei ?? false) ? 'checked' : '' }}
                    {{ isset($product) && $product->exists && $product->imeis->isNotEmpty() ? 'disabled' : '' }}>

@@ -91,7 +91,7 @@
         <div class="col-md-4 field-group mb-md-0">
           <label for="status" class="form-label">Statut</label>
           <select name="status" id="status" class="form-select @error('status') is-invalid @enderror">
-            <option value="issued" @selected(old('status', $invoice?->status->value ?? 'issued') === 'issued')>Émise</option>
+            <option value="issued" @selected(old('status', $invoice?->status->value ?? 'issued') === 'issued')>Non payé</option>
             <option value="partial" @selected(old('status', $invoice?->status->value ?? '') === 'partial')>Partiellement payée</option>
             <option value="paid" @selected(old('status', $invoice?->status->value ?? '') === 'paid')>Payée</option>
             <option value="cancelled" @selected(old('status', $invoice?->status->value ?? '') === 'cancelled')>Annulée</option>

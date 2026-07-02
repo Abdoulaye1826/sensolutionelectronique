@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Helpers\PhoneHelper;
+use App\Models\Invoice;
 use App\Models\Sale;
 
 /**
@@ -12,24 +13,40 @@ use App\Models\Sale;
  */
 class WhatsAppService
 {
-    public function buildMessage(Sale $sale, string $documentLabel, string $documentNumber, string $documentUrl): string
+    public function buildMessage(Sale $sale, string $documentLabel, string $documentNumber, string $documentUrl, ?Invoice $invoice = null): string
     {
         $customerName = $sale->customer?->full_name ?? 'cher client';
         $companyPhone = config('company.phone');
 
-        return implode("\n", [
+        $lines = [
             "Bonjour {$customerName},",
             '',
             "Veuillez trouver votre {$documentLabel}.",
             '',
             "Référence : {$documentNumber}",
             $documentUrl,
+        ];
+
+        if ($invoice !== null && !$invoice->isFullyPaid()) {
+            $lines[] = '';
+            $lines[] = 'Reste à payer : ' . number_format($invoice->remaining_amount, 0, ',', ' ') . ' FCFA';
+        }
+
+        if ($sale->warranty_duration !== null && $sale->warranty_duration->value !== 'none') {
+            $lines[] = '';
+            $lines[] = 'Garantie : ' . $sale->warranty_duration->label()
+                . ($sale->warranty_end_date ? ' — valable jusqu\'au ' . $sale->warranty_end_date->format('d/m/Y') : '');
+        }
+
+        $lines = array_merge($lines, [
             '',
             'Merci de votre confiance.',
             '',
             'Pour toute information complémentaire :',
             $companyPhone,
         ]);
+
+        return implode("\n", $lines);
     }
 
     /**

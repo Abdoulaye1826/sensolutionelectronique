@@ -6,7 +6,9 @@ use App\Enums\InvoiceStatus;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Sale;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class InvoiceService
 {
@@ -35,12 +37,28 @@ class InvoiceService
 
     public function summary(): array
     {
+        // Montants agrégés sur les factures actives (hors annulées), même
+        // technique que DashboardService pour éviter le N+1 sur les paiements.
+        $activeInvoices = Invoice::where('status', '!=', InvoiceStatus::Cancelled->value)
+            ->select('total_ttc', DB::raw('(SELECT COALESCE(SUM(amount), 0) FROM payments WHERE payments.invoice_id = invoices.id) as paid'))
+            ->get();
+
+        $oldestUnpaid = Invoice::whereIn('status', [InvoiceStatus::Issued->value, InvoiceStatus::Partial->value])
+            ->orderBy('issued_at')
+            ->orderBy('id')
+            ->with('customer')
+            ->first();
+
         return [
             'total' => Invoice::count(),
             'issued' => Invoice::where('status', InvoiceStatus::Issued)->count(),
             'partial' => Invoice::where('status', InvoiceStatus::Partial)->count(),
             'paid' => Invoice::where('status', InvoiceStatus::Paid)->count(),
             'cancelled' => Invoice::where('status', InvoiceStatus::Cancelled)->count(),
+            'amount_total' => (float) $activeInvoices->sum('total_ttc'),
+            'amount_paid' => (float) $activeInvoices->sum('paid'),
+            'amount_remaining' => (float) $activeInvoices->sum(fn ($row) => max(0, (float) $row->total_ttc - (float) $row->paid)),
+            'oldest_unpaid' => $oldestUnpaid,
         ];
     }
 
@@ -94,6 +112,25 @@ class InvoiceService
             'status' => InvoiceStatus::Issued,
             'invoice_number' => $this->generateInvoiceNumberFromSale($sale),
         ]);
+    }
+
+    /**
+     * Génère le PDF (aperçu vente ou bon d'échange) pour une facture, utilisé
+     * à la fois par le téléchargement direct et par l'envoi par email —
+     * un seul endroit pour la configuration dompdf.
+     */
+    public function renderPdfContent(Invoice $invoice): string
+    {
+        $invoice->load(['sale.customer', 'sale.user', 'sale.items.product', 'sale.items.productImei', 'payments']);
+        $sale = $invoice->sale;
+        $downloadUrl = null;
+
+        $pdf = PDF::loadView('documents.sale_document', compact('sale', 'invoice', 'downloadUrl'))
+            ->setPaper('a4', 'portrait')
+            ->setOption('defaultFont', 'DejaVu Sans')
+            ->setOption('isHtml5ParserEnabled', true);
+
+        return $pdf->output();
     }
 
     private function generateInvoiceNumberFromSale(Sale $sale): string

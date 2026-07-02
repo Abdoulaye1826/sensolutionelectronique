@@ -355,6 +355,16 @@
           <span class="label">Montant ajouté par le client</span>
           <span class="val">{{ number_format($addedAmount, 0, ',', ' ') }} FCFA</span>
         </div>
+        @if($invoice && !$invoice->isFullyPaid())
+          <div class="totals-line">
+            <span class="label">Payé</span>
+            <span class="val">{{ number_format($invoice->amount_paid, 0, ',', ' ') }} FCFA</span>
+          </div>
+          <div class="totals-line">
+            <span class="label">Reste à payer</span>
+            <span class="val">{{ number_format($invoice->remaining_amount, 0, ',', ' ') }} FCFA</span>
+          </div>
+        @endif
       </div>
     </div>
   @else
@@ -415,12 +425,35 @@
           <span class="label">Total final</span>
           <span class="val">{{ number_format($total, 0, ',', ' ') }} FCFA</span>
         </div>
+        @if($invoice && !$invoice->isFullyPaid())
+          <div class="totals-line">
+            <span class="label">Payé</span>
+            <span class="val">{{ number_format($invoice->amount_paid, 0, ',', ' ') }} FCFA</span>
+          </div>
+          <div class="totals-line">
+            <span class="label">Reste à payer</span>
+            <span class="val">{{ number_format($invoice->remaining_amount, 0, ',', ' ') }} FCFA</span>
+          </div>
+        @endif
       </div>
     </div>
 
     {{-- ── MONTANT EN LETTRES ── --}}
     <div class="amount-words">
       Arrêtée la présente facture à la somme de : <span>{{ \App\Helpers\NumberHelper::toWords($total) ?? number_format($total, 0, ',', ' ') . ' Francs CFA' }}</span>
+    </div>
+  @endif
+
+  {{-- ── GARANTIE ── durée choisie à la vente, propre à chaque transaction --}}
+  @if($sale->warranty_duration && $sale->warranty_duration->value !== 'none')
+    <div class="remarks-section" style="padding-bottom:0;">
+      <div class="info-card">
+        <h4>Garantie</h4>
+        <p style="font-size:13px;color:var(--text);font-weight:600;margin-bottom:2px;">{{ $sale->warranty_duration->label() }}</p>
+        @if($sale->warranty_end_date)
+          <p class="remarks-text">Valable jusqu'au {{ $sale->warranty_end_date->format('d/m/Y') }}</p>
+        @endif
+      </div>
     </div>
   @endif
 
@@ -433,7 +466,7 @@
         @if($remarksText)
           {{ $remarksText }}
         @else
-          La garantie est de 30 jours et concerne les défauts d'usine. Le service après-vente peut durer une semaine maximum si la garantie n'a pas expiré. Nous ne remboursons pas — nous réparons ou remplaçons.
+          Le service après-vente peut durer une semaine maximum si la garantie n'a pas expiré. Nous ne remboursons pas — nous réparons ou remplaçons.
         @endif
       </p>
     </div>

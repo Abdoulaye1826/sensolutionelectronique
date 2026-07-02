@@ -83,6 +83,12 @@ class MenuService
                 'roles' => ['admin', 'manager', 'cashier'],
             ],
             [
+                'label' => 'Garanties',
+                'route' => 'warranties.index',
+                'icon' => 'bi-shield-check',
+                'roles' => ['admin', 'manager', 'cashier'],
+            ],
+            [
                 'label' => 'Rapports',
                 'route' => 'reports.index',
                 'icon' => 'bi-graph-up',

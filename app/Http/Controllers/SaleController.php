@@ -10,11 +10,11 @@ use App\Models\Product;
 use App\Models\Sale;
 use App\Services\SaleService;
 use App\Services\WhatsAppService;
-use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -141,7 +141,17 @@ class SaleController extends Controller
             'sale_price' => ['required', 'numeric', 'min:0'],
             'purchase_price' => ['nullable', 'numeric', 'min:0'],
             'description' => ['nullable', 'string'],
+            '_modal_imei' => ['nullable', 'string', 'max:20'],
         ]);
+
+        // Un IMEI saisi dans la modale signifie que le produit apporté est un
+        // téléphone : le produit créé doit donc être suivi par IMEI, sinon
+        // SaleService::buildExchangeDetails() et receiveExchangeImei()
+        // ignorent silencieusement l'IMEI (ni affiché sur la facture, ni
+        // enregistré en stock).
+        $imei = trim((string) ($validated['_modal_imei'] ?? ''));
+        unset($validated['_modal_imei']);
+        $validated['tracks_imei'] = $imei !== '';
 
         if (empty($validated['reference'])) {
             $reference = Str::upper('EX-' . Str::random(6));
@@ -168,6 +178,7 @@ class SaleController extends Controller
             'sale_price' => $product->sale_price,
             'category_id' => $product->category_id,
             'stock_quantity' => $product->stock_quantity,
+            'tracks_imei' => $product->tracks_imei,
         ], 201);
     }
 
@@ -178,8 +189,8 @@ class SaleController extends Controller
     {
         abort_unless($sale->isEchange(), 404);
 
-        $sale->load(['customer', 'user', 'items.product', 'items.productImei']);
-        $invoice = null;
+        $sale->load(['customer', 'user', 'items.product', 'items.productImei', 'invoice.payments']);
+        $invoice = $sale->invoice;
         $downloadUrl = route('sales.exchange-voucher.download', $sale);
 
         return view('documents.sale_document', compact('sale', 'invoice', 'downloadUrl'));
@@ -192,21 +203,31 @@ class SaleController extends Controller
     {
         abort_unless($sale->isEchange(), 404);
 
-        $sale->load(['customer', 'user', 'items.product', 'items.productImei']);
-        $invoice = null;
-        $downloadUrl = null;
-
-        $pdf = PDF::loadView('documents.sale_document', compact('sale', 'invoice', 'downloadUrl'))
-            ->setPaper('a4', 'portrait')
-            ->setOption('defaultFont', 'DejaVu Sans')
-            ->setOption('isHtml5ParserEnabled', true);
-
+        $content = $this->saleService->renderExchangeVoucherPdfContent($sale);
         $fileName = "{$sale->exchange_voucher_number}.pdf";
-        $content = $pdf->output();
 
         return response($content, 200, [
             'Content-Type' => 'application/pdf; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"{$fileName}\"",
+        ]);
+    }
+
+    /**
+     * Version publique (lien signé, sans authentification) du PDF du bon
+     * d'échange — utilisée par le lien partagé sur WhatsApp pour que le
+     * client puisse ouvrir directement le document sans être connecté à
+     * l'application.
+     */
+    public function publicExchangeVoucherPdf(Sale $sale): Response
+    {
+        abort_unless($sale->isEchange(), 404);
+
+        $content = $this->saleService->renderExchangeVoucherPdfContent($sale);
+        $fileName = "{$sale->exchange_voucher_number}.pdf";
+
+        return response($content, 200, [
+            'Content-Type' => 'application/pdf; charset=UTF-8',
+            'Content-Disposition' => "inline; filename=\"{$fileName}\"",
         ]);
     }
 
@@ -246,10 +267,15 @@ class SaleController extends Controller
     {
         abort_unless($sale->isEchange(), 404);
 
-        $sale->load('customer');
+        $sale->load(['customer', 'invoice.payments']);
 
-        $pdfUrl = route('sales.exchange-voucher.download', $sale);
-        $message = $this->whatsAppService->buildMessage($sale, "bon d'échange", $sale->exchange_voucher_number, $pdfUrl);
+        // Lien signé public (sans authentification) : le client doit pouvoir
+        // ouvrir le PDF directement depuis WhatsApp sans être connecté à
+        // l'application — la route de téléchargement classique exige une
+        // session authentifiée et redirigeait le client vers la page de
+        // connexion.
+        $pdfUrl = URL::signedRoute('sales.exchange-voucher.public-pdf', ['sale' => $sale->id]);
+        $message = $this->whatsAppService->buildMessage($sale, "bon d'échange", $sale->exchange_voucher_number, $pdfUrl, $sale->invoice);
         $waUrl = $this->whatsAppService->buildLink($sale->customer?->phone, $message);
 
         return [

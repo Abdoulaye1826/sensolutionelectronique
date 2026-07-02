@@ -32,6 +32,7 @@ class StoreSaleRequest extends FormRequest
             'status' => ['required', 'in:draft,validated,cancelled'],
             'payment_method' => ['nullable', 'in:wave,orange_money,cash'],
             'amount_given' => ['nullable', 'numeric', 'min:0'],
+            'warranty_duration' => ['required', 'in:none,30d,3m,6m,1y'],
             'notes' => ['nullable', 'string'],
         ];
     }
@@ -43,6 +44,7 @@ class StoreSaleRequest extends FormRequest
             'discount_amount' => $this->filled('discount_amount') ? $this->input('discount_amount') : 0,
             'exchange_quantity' => $this->filled('exchange_quantity') ? $this->input('exchange_quantity') : 1,
             'exchange_added_amount' => $this->filled('exchange_added_amount') ? $this->input('exchange_added_amount') : 0,
+            'warranty_duration' => $this->filled('warranty_duration') ? $this->input('warranty_duration') : '30d',
         ]);
     }
 }

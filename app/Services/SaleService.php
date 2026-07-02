@@ -7,6 +7,7 @@ use App\Enums\ImeiStatus;
 use App\Enums\SaleStatus;
 use App\Enums\SaleType;
 use App\Enums\StockMovementType;
+use App\Enums\WarrantyDuration;
 use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Invoice;
@@ -16,6 +17,7 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StockMovement;
 use App\Services\InvoiceService;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -81,6 +83,8 @@ class SaleService
         $data['sold_at'] = now();
         $data['exchange_details'] = null;
         $data['exchange_voucher_number'] = null;
+        $data['warranty_end_date'] = WarrantyDuration::from($data['warranty_duration'] ?? 'none')
+            ->endDateFrom(\Carbon\Carbon::parse($data['sale_date']));
 
         $paymentMethod = $data['payment_method'] ?? null;
         $amountGiven = isset($data['amount_given']) && $data['amount_given'] !== '' ? (float) $data['amount_given'] : null;
@@ -165,6 +169,8 @@ class SaleService
         $data['sale_type'] = $saleType;
         $paymentMethod = $data['payment_method'] ?? null;
         $amountGiven = isset($data['amount_given']) && $data['amount_given'] !== '' ? (float) $data['amount_given'] : null;
+        $data['warranty_end_date'] = WarrantyDuration::from($data['warranty_duration'] ?? 'none')
+            ->endDateFrom($sale->sale_date);
 
         if ($saleType === SaleType::Echange) {
             $exchangeProduct = $this->resolveExchangeProduct($data);
@@ -226,6 +232,25 @@ class SaleService
 
             return $sale->fresh();
         });
+    }
+
+    /**
+     * Génère le PDF du bon d'échange, utilisé à la fois par le téléchargement
+     * direct et par le lien public signé partagé sur WhatsApp — un seul
+     * endroit pour la configuration dompdf (même pattern qu'InvoiceService::renderPdfContent()).
+     */
+    public function renderExchangeVoucherPdfContent(Sale $sale): string
+    {
+        $sale->load(['customer', 'user', 'items.product', 'items.productImei', 'invoice.payments']);
+        $invoice = $sale->invoice;
+        $downloadUrl = null;
+
+        $pdf = PDF::loadView('documents.sale_document', compact('sale', 'invoice', 'downloadUrl'))
+            ->setPaper('a4', 'portrait')
+            ->setOption('defaultFont', 'DejaVu Sans')
+            ->setOption('isHtml5ParserEnabled', true);
+
+        return $pdf->output();
     }
 
     public function delete(Sale $sale): void
@@ -431,6 +456,14 @@ class SaleService
 
     private function buildExchangeDetails(array $data, Product $product): array
     {
+        // On se base sur l'IMEI réellement saisi plutôt que sur le seul
+        // indicateur tracks_imei du produit : un produit d'échange créé à la
+        // volée (modale "Ajouter un produit") peut ne pas avoir cet
+        // indicateur correctement positionné, ce qui faisait disparaître
+        // silencieusement l'IMEI saisi de la facture d'échange.
+        $imei = trim((string) ($data['exchange_imei'] ?? ''));
+        $tracksImei = $product->tracks_imei || $imei !== '';
+
         return [
             'product_id' => $product->id,
             'name' => $product->name,
@@ -438,9 +471,9 @@ class SaleService
             'brand' => $product->brand,
             'description' => $product->description,
             'category_id' => $product->category_id,
-            'quantity' => $product->tracks_imei ? 1 : ($data['exchange_quantity'] ?? 0),
+            'quantity' => $tracksImei ? 1 : ($data['exchange_quantity'] ?? 0),
             'added_amount' => $data['exchange_added_amount'] ?? 0,
-            'imei' => $product->tracks_imei ? trim((string) ($data['exchange_imei'] ?? '')) : null,
+            'imei' => $imei !== '' ? $imei : null,
         ];
     }
 

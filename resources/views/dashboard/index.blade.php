@@ -30,6 +30,8 @@
       ['label' => 'Factures émises',        'value' => $stats['invoices_count'],                                      'icon' => 'bi-file-earmark-text',   'color' => 'bg-secondary bg-opacity-10 text-secondary'],
       ['label' => 'Factures payées',        'value' => $stats['paid_invoices_count'],                                 'icon' => 'bi-wallet2',             'color' => 'bg-success bg-opacity-10 text-success'],
       ['label' => 'Impayés',                'value' => $stats['pending_invoices_count'],                              'icon' => 'bi-hourglass-split',     'color' => 'bg-warning bg-opacity-10 text-warning'],
+      ['label' => 'Montant payé',           'value' => number_format($stats['amount_paid_total'], 0, ',', ' ') . ' FCFA', 'icon' => 'bi-cash-stack',       'color' => 'bg-success bg-opacity-10 text-success'],
+      ['label' => 'Reste à payer',          'value' => number_format($stats['remaining_amount_total'], 0, ',', ' ') . ' FCFA', 'icon' => 'bi-exclamation-circle', 'color' => 'bg-danger bg-opacity-10 text-danger'],
       ['label' => 'Clients',                'value' => $stats['customers_count'],                                     'icon' => 'bi-people',              'color' => 'bg-primary bg-opacity-10 text-primary'],
       ['label' => 'Nouveaux clients (mois)','value' => $stats['new_customers_month'],                                 'icon' => 'bi-person-plus',         'color' => 'bg-info bg-opacity-10 text-info'],
       // Masqué pour le caissier — non présents sur le rapport

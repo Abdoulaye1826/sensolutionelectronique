@@ -4,14 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreInvoiceRequest;
 use App\Http\Requests\UpdateInvoiceRequest;
+use App\Mail\InvoiceDocumentMail;
 use App\Models\Invoice;
 use App\Services\InvoiceService;
 use App\Services\WhatsAppService;
-use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 use Illuminate\View\View;
 
 class InvoiceController extends Controller
@@ -81,7 +83,7 @@ class InvoiceController extends Controller
 
     public function print(Invoice $invoice): View
     {
-        $invoice->load(['sale.customer', 'sale.user', 'sale.items.product', 'sale.items.productImei']);
+        $invoice->load(['sale.customer', 'sale.user', 'sale.items.product', 'sale.items.productImei', 'payments']);
         $sale = $invoice->sale;
         abort_if($sale === null, 404);
         $downloadUrl = route('invoices.download', $invoice);
@@ -91,21 +93,28 @@ class InvoiceController extends Controller
 
     public function download(Invoice $invoice): Response
     {
-        $invoice->load(['sale.customer', 'sale.user', 'sale.items.product', 'sale.items.productImei']);
-        $sale = $invoice->sale;
-        $downloadUrl = null;
-
-        $pdf = PDF::loadView('documents.sale_document', compact('sale', 'invoice', 'downloadUrl'))
-            ->setPaper('a4', 'portrait')
-            ->setOption('defaultFont', 'DejaVu Sans')
-            ->setOption('isHtml5ParserEnabled', true);
-
+        $content = $this->invoiceService->renderPdfContent($invoice);
         $fileName = "{$invoice->invoice_number}.pdf";
-        $content = $pdf->output();
 
         return response($content, 200, [
             'Content-Type' => 'application/pdf; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"{$fileName}\"",
+        ]);
+    }
+
+    /**
+     * Version publique (lien signé, sans authentification) de la facture —
+     * utilisée par le lien partagé sur WhatsApp pour que le client puisse
+     * ouvrir directement le document sans être connecté à l'application.
+     */
+    public function publicPdf(Invoice $invoice): Response
+    {
+        $content = $this->invoiceService->renderPdfContent($invoice);
+        $fileName = "{$invoice->invoice_number}.pdf";
+
+        return response($content, 200, [
+            'Content-Type' => 'application/pdf; charset=UTF-8',
+            'Content-Disposition' => "inline; filename=\"{$fileName}\"",
         ]);
     }
 
@@ -139,20 +148,47 @@ class InvoiceController extends Controller
         return response()->json($built);
     }
 
+    public function sendEmail(Invoice $invoice): RedirectResponse
+    {
+        $invoice->load(['sale.customer', 'customer']);
+        $sale = $invoice->sale;
+        abort_if($sale === null, 404);
+
+        $email = $invoice->customer?->email ?? $sale->customer?->email;
+        if (empty($email)) {
+            return back()->with('error', "Le client n'a pas d'adresse email renseignée.");
+        }
+
+        $isEchange = $sale->isEchange();
+        $documentLabel = $isEchange ? "bon d'échange" : 'facture';
+        $documentNumber = $isEchange ? $sale->exchange_voucher_number : $invoice->invoice_number;
+        $pdfContent = $this->invoiceService->renderPdfContent($invoice);
+
+        Mail::to($email)->send(new InvoiceDocumentMail($invoice, $sale, $documentLabel, $documentNumber, $pdfContent));
+
+        return back()->with('success', "Document envoyé par email à {$email}.");
+    }
+
     private function buildWhatsAppPayload(Invoice $invoice): array
     {
-        $invoice->load(['sale.customer']);
+        $invoice->load(['sale.customer', 'payments']);
         $sale = $invoice->sale;
         abort_if($sale === null, 404);
 
         $isEchange = $sale->isEchange();
         $documentLabel = $isEchange ? "bon d'échange" : 'facture';
         $documentNumber = $isEchange ? $sale->exchange_voucher_number : $invoice->invoice_number;
-        $pdfUrl = $isEchange
-            ? route('sales.exchange-voucher.download', $sale)
-            : route('invoices.download', $invoice);
 
-        $message = $this->whatsAppService->buildMessage($sale, $documentLabel, $documentNumber, $pdfUrl);
+        // Lien signé public (sans authentification) : le client doit pouvoir
+        // ouvrir le PDF directement depuis WhatsApp sans être connecté à
+        // l'application — la route de téléchargement classique exige une
+        // session authentifiée et redirigeait le client vers la page de
+        // connexion (il recevait donc toute l'appli au lieu du seul document).
+        $pdfUrl = $isEchange
+            ? URL::signedRoute('sales.exchange-voucher.public-pdf', ['sale' => $sale->id])
+            : URL::signedRoute('invoices.public-pdf', ['invoice' => $invoice->id]);
+
+        $message = $this->whatsAppService->buildMessage($sale, $documentLabel, $documentNumber, $pdfUrl, $invoice);
         $waUrl = $this->whatsAppService->buildLink($sale->customer?->phone, $message);
 
         return [

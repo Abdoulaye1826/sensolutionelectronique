@@ -309,7 +309,7 @@
   </div>
 </div>
 <div class="row">
-  <div class="col-md-6 mb-3">
+  <div class="col-md-4 mb-3">
     <label for="payment_method" class="form-label">Mode de paiement</label>
     <select id="payment_method" name="payment_method" class="form-select @error('payment_method') is-invalid @enderror">
       <option value="">— Non renseigné —</option>
@@ -319,7 +319,19 @@
     </select>
     @error('payment_method')<div class="invalid-feedback">{{ $message }}</div>@enderror
   </div>
-  <div class="col-md-6 mb-3">
+  @php $currentWarrantyDuration = old('warranty_duration', $sale?->warranty_duration?->value ?? '30d'); @endphp
+  <div class="col-md-4 mb-3">
+    <label for="warranty_duration" class="form-label">Garantie <span class="text-danger">*</span></label>
+    <select id="warranty_duration" name="warranty_duration" class="form-select @error('warranty_duration') is-invalid @enderror" required>
+      <option value="none" @selected($currentWarrantyDuration === 'none')>Aucune garantie</option>
+      <option value="30d" @selected($currentWarrantyDuration === '30d')>30 jours</option>
+      <option value="3m" @selected($currentWarrantyDuration === '3m')>3 mois</option>
+      <option value="6m" @selected($currentWarrantyDuration === '6m')>6 mois</option>
+      <option value="1y" @selected($currentWarrantyDuration === '1y')>1 an</option>
+    </select>
+    @error('warranty_duration')<div class="invalid-feedback">{{ $message }}</div>@enderror
+  </div>
+  <div class="col-md-4 mb-3">
     <label for="status" class="form-label">Statut <span class="text-danger">*</span></label>
     <select id="status" name="status" class="form-select @error('status') is-invalid @enderror" required>
       <option value="draft" @selected(old('status', $sale?->status->value ?? 'draft') === 'draft')>Brouillon</option>

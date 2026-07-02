@@ -31,11 +31,11 @@
 
   <div class="dashboard-summary-card">
     <div class="summary-card-top">
-      <span class="badge bg-secondary">Émises</span>
+      <span class="badge bg-secondary">Non payées</span>
       <i class="bi bi-send summary-icon text-secondary"></i>
     </div>
     <div class="summary-card-value">{{ $summary['issued'] }}</div>
-    <div class="summary-card-label">Factures émises</div>
+    <div class="summary-card-label">Factures non payées</div>
   </div>
 
   <div class="dashboard-summary-card">
@@ -66,6 +66,56 @@
   </div>
 </div>
 
+<div class="dashboard-summary-grid mb-4">
+  <div class="dashboard-summary-card">
+    <div class="summary-card-top">
+      <span class="badge bg-primary">Facturé</span>
+      <i class="bi bi-receipt-cutoff summary-icon text-primary"></i>
+    </div>
+    <div class="summary-card-value">{{ number_format($summary['amount_total'], 0, ',', ' ') }} FCFA</div>
+    <div class="summary-card-label">Montant total facturé (hors annulées)</div>
+  </div>
+
+  <div class="dashboard-summary-card">
+    <div class="summary-card-top">
+      <span class="badge bg-success">Payé</span>
+      <i class="bi bi-cash-stack summary-icon text-success"></i>
+    </div>
+    <div class="summary-card-value">{{ number_format($summary['amount_paid'], 0, ',', ' ') }} FCFA</div>
+    <div class="summary-card-label">Montant total payé</div>
+  </div>
+
+  <div class="dashboard-summary-card">
+    <div class="summary-card-top">
+      <span class="badge bg-danger">Reste</span>
+      <i class="bi bi-exclamation-circle summary-icon text-danger"></i>
+    </div>
+    <div class="summary-card-value">{{ number_format($summary['amount_remaining'], 0, ',', ' ') }} FCFA</div>
+    <div class="summary-card-label">Reste à payer global</div>
+  </div>
+
+  <div class="dashboard-summary-card">
+    <div class="summary-card-top">
+      <span class="badge bg-dark">Plus ancienne</span>
+      <i class="bi bi-clock-history summary-icon text-dark"></i>
+    </div>
+    <div class="summary-card-value">
+      @if($summary['oldest_unpaid'])
+        <a href="{{ route('invoices.edit', $summary['oldest_unpaid']) }}">{{ $summary['oldest_unpaid']->invoice_number }}</a>
+      @else
+        —
+      @endif
+    </div>
+    <div class="summary-card-label">
+      @if($summary['oldest_unpaid'])
+        Impayée depuis le {{ $summary['oldest_unpaid']->issued_at->format('d/m/Y') }} ({{ $summary['oldest_unpaid']->customer?->full_name ?? 'Client anonyme' }})
+      @else
+        Aucune facture impayée
+      @endif
+    </div>
+  </div>
+</div>
+
 <div class="card border-0 shadow-sm mb-4 filter-card">
   <div class="card-body">
     <form method="GET" action="{{ route('invoices.index') }}" class="row g-3 align-items-end">
@@ -78,7 +128,7 @@
         <label class="form-label small">Statut</label>
         <select name="status" class="form-select">
           <option value="">Tous</option>
-          <option value="issued" @selected(($filters['status'] ?? '') === 'issued')>Émise</option>
+          <option value="issued" @selected(($filters['status'] ?? '') === 'issued')>Non payé</option>
           <option value="partial" @selected(($filters['status'] ?? '') === 'partial')>Partiellement payée</option>
           <option value="paid" @selected(($filters['status'] ?? '') === 'paid')>Payée</option>
           <option value="cancelled" @selected(($filters['status'] ?? '') === 'cancelled')>Annulée</option>
@@ -106,7 +156,9 @@
           <th>Client</th>
           <th>Vente</th>
           <th>Date</th>
-          <th>Total TTC</th>
+          <th class="text-end">Montant total</th>
+          <th class="text-end">Montant payé</th>
+          <th class="text-end">Reste à payer</th>
           <th>Statut</th>
           <th class="text-end">Actions</th>
         </tr>
@@ -118,12 +170,9 @@
             <td>{{ $invoice->customer?->full_name ?? 'Client anonyme' }}</td>
             <td>{{ $invoice->sale?->sale_number ?? '—' }}</td>
             <td>{{ $invoice->issued_at->format('d/m/Y') }}</td>
-            <td>
-              {{ number_format($invoice->total_ttc, 2, ',', ' ') }} FCFA
-              @if($invoice->status->value === 'partial')
-                <br><small class="text-muted">Reste {{ number_format($invoice->remaining_amount, 0, ',', ' ') }} FCFA</small>
-              @endif
-            </td>
+            <td class="text-end">{{ number_format($invoice->total_ttc, 0, ',', ' ') }} FCFA</td>
+            <td class="text-end text-success">{{ number_format($invoice->amount_paid, 0, ',', ' ') }} FCFA</td>
+            <td class="text-end {{ $invoice->remaining_amount > 0 ? 'text-danger' : 'text-success' }}">{{ number_format($invoice->remaining_amount, 0, ',', ' ') }} FCFA</td>
             <td><span class="badge {{ $invoice->status->badgeClass() }}">{{ $invoice->status->label() }}</span></td>
             <td class="text-end">
               <a href="{{ route('invoices.print', $invoice) }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Imprimer">
@@ -136,6 +185,15 @@
                       data-payload-url="{{ route('invoices.whatsapp.payload', $invoice) }}">
                 <i class="bi bi-whatsapp"></i>
               </button>
+              @php $customerEmail = $invoice->customer?->email ?? $invoice->sale?->customer?->email; @endphp
+              <form action="{{ route('invoices.email', $invoice) }}" method="POST" class="d-inline"
+                    onsubmit="return confirm('Envoyer ce document par email à {{ $customerEmail }} ?')">
+                @csrf
+                <button type="submit" class="btn btn-sm btn-outline-info" title="{{ $customerEmail ? 'Envoyer par email' : 'Aucun email renseigné pour ce client' }}"
+                        @if(!$customerEmail) disabled @endif>
+                  <i class="bi bi-envelope"></i>
+                </button>
+              </form>
               <a href="{{ route('invoices.edit', $invoice) }}" class="btn btn-sm btn-outline-primary" title="Modifier">
                 <i class="bi bi-pencil"></i>
               </a>
@@ -149,7 +207,7 @@
           </tr>
         @empty
           <tr>
-            <td colspan="7" class="text-center text-muted py-4">Aucune facture trouvée.</td>
+            <td colspan="9" class="text-center text-muted py-4">Aucune facture trouvée.</td>
           </tr>
         @endforelse
       </tbody>

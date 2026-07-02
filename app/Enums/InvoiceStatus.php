@@ -12,7 +12,7 @@ enum InvoiceStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::Issued => 'Émise',
+            self::Issued => 'Non payé',
             self::Partial => 'Partiellement payée',
             self::Paid => 'Payée',
             self::Cancelled => 'Annulée',

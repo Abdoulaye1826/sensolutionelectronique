@@ -24,7 +24,10 @@ class DashboardService
         $today = Carbon::today();
         $startOfMonth = Carbon::now()->startOfMonth();
 
-        $validatedSales = Sale::validated();
+        // Ventes qui comptent réellement dans le CA : validées ET dont la
+        // facture n'a pas été annulée après coup (sinon la vente reste
+        // "validated" mais ne doit plus alimenter les chiffres financiers).
+        $validatedSales = Sale::revenueEligible();
 
         $salesCountMonth = (clone $validatedSales)->where('sale_date', '>=', $startOfMonth)->count();
         $revenueMonth = (float) (clone $validatedSales)->where('sale_date', '>=', $startOfMonth)->sum('total_ttc');
@@ -32,18 +35,30 @@ class DashboardService
         $marginMonth = (float) SaleItem::query()
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->join('products', 'sale_items.product_id', '=', 'products.id')
+            ->leftJoin('invoices', 'invoices.sale_id', '=', 'sales.id')
             ->where('sales.status', SaleStatus::Validated->value)
             ->where('sales.sale_type', SaleType::Vente->value)
             ->where('sales.sale_date', '>=', $startOfMonth)
+            ->where(fn ($q) => $q->whereNull('invoices.status')->orWhere('invoices.status', '!=', InvoiceStatus::Cancelled->value))
             ->sum(DB::raw('(sale_items.unit_price - products.purchase_price) * sale_items.quantity'));
+
+        // ── Paiements (toutes factures non annulées) ──
+        $invoicePaymentRows = Invoice::query()
+            ->where('status', '!=', InvoiceStatus::Cancelled->value)
+            ->select('total_ttc', DB::raw('(SELECT COALESCE(SUM(amount), 0) FROM payments WHERE payments.invoice_id = invoices.id) as paid'))
+            ->get();
+        $amountPaidTotal = (float) $invoicePaymentRows->sum('paid');
+        $remainingAmountTotal = (float) $invoicePaymentRows->sum(fn ($row) => max(0, (float) $row->total_ttc - (float) $row->paid));
 
         return [
             'revenue_today' => (float) (clone $validatedSales)->forDate($today)->sum('total_ttc'),
             'revenue_month' => $revenueMonth,
-            'sales_count' => Sale::validated()->count(),
+            'sales_count' => Sale::revenueEligible()->count(),
             'invoices_count' => Invoice::count(),
             'paid_invoices_count' => Invoice::where('status', InvoiceStatus::Paid)->count(),
             'pending_invoices_count' => Invoice::where('status', InvoiceStatus::Issued)->count(),
+            'amount_paid_total' => $amountPaidTotal,
+            'remaining_amount_total' => $remainingAmountTotal,
             'products_count' => Product::count(),
             'low_stock_count' => Product::lowStock()->count(),
             'out_of_stock_count' => Product::outOfStock()->count(),
@@ -69,7 +84,7 @@ class DashboardService
     {
         $start = Carbon::today()->subDays($days - 1);
 
-        $rows = Sale::validated()
+        $rows = Sale::revenueEligible()
             ->where('sale_date', '>=', $start)
             ->select(
                 DB::raw('DATE(sale_date) as day'),
@@ -105,7 +120,7 @@ class DashboardService
     {
         $start = Carbon::now()->subMonths(11)->startOfMonth();
 
-        $rows = Sale::validated()
+        $rows = Sale::revenueEligible()
             ->where('sale_date', '>=', $start)
             ->select(
                 DB::raw('YEAR(sale_date) as year'),
@@ -140,7 +155,9 @@ class DashboardService
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->join('products', 'sale_items.product_id', '=', 'products.id')
             ->join('categories', 'products.category_id', '=', 'categories.id')
+            ->leftJoin('invoices', 'invoices.sale_id', '=', 'sales.id')
             ->where('sales.status', SaleStatus::Validated->value)
+            ->where(fn ($q) => $q->whereNull('invoices.status')->orWhere('invoices.status', '!=', InvoiceStatus::Cancelled->value))
             ->select('categories.name', DB::raw('SUM(sale_items.line_total) as total'))
             ->groupBy('categories.id', 'categories.name')
             ->orderByDesc('total')
@@ -170,6 +187,7 @@ class DashboardService
     {
         return Customer::query()
             ->join('invoices', 'customers.id', '=', 'invoices.customer_id')
+            ->where('invoices.status', '!=', InvoiceStatus::Cancelled->value)
             ->select(
                 'customers.id',
                 'customers.full_name',
@@ -186,7 +204,7 @@ class DashboardService
     public function getSalesByUser(int $limit = 5): array
     {
         return Sale::query()
-            ->validated()
+            ->revenueEligible()
             ->join('users', 'sales.user_id', '=', 'users.id')
             ->select(
                 'users.id',
@@ -219,7 +237,9 @@ class DashboardService
         return SaleItem::query()
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->join('products', 'sale_items.product_id', '=', 'products.id')
+            ->leftJoin('invoices', 'invoices.sale_id', '=', 'sales.id')
             ->where('sales.status', SaleStatus::Validated->value)
+            ->where(fn ($q) => $q->whereNull('invoices.status')->orWhere('invoices.status', '!=', InvoiceStatus::Cancelled->value))
             ->select(
                 'products.name',
                 DB::raw('SUM(sale_items.quantity) as total_qty'),
@@ -239,7 +259,7 @@ class DashboardService
     {
         $start = Carbon::now()->subMonths(11)->startOfMonth();
 
-        $rows = Sale::validated()
+        $rows = Sale::revenueEligible()
             ->where('sale_date', '>=', $start)
             ->select('sale_type', DB::raw('COUNT(*) as count'))
             ->groupBy('sale_type')
