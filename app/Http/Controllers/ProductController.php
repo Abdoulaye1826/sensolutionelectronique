@@ -32,7 +32,7 @@ class ProductController extends Controller
 
         if ($request->ajax()) {
             return response()->json([
-                'html' => view('products.partials.table', compact('products'))->render(),
+                'html' => view('products.partials.grid', compact('products'))->render(),
                 'pagination' => view('products.partials.pagination', compact('products'))->render(),
             ]);
         }

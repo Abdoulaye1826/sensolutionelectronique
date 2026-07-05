@@ -459,6 +459,163 @@ a:focus-visible, button:focus-visible, input:focus-visible, .nav-link:focus-visi
     font-weight: 500;
 }
 
+/* ── Grille produits (grandes vignettes, adaptée tablette/iPad) ─── */
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.25rem;
+}
+
+.products-grid__empty {
+    grid-column: 1 / -1;
+}
+
+.product-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow .15s, transform .15s;
+}
+
+.product-card:hover {
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+    transform: translateY(-2px);
+}
+
+.product-card__thumb {
+    position: relative;
+    display: block;
+    aspect-ratio: 1 / 1;
+    background: var(--surface);
+}
+
+.product-card__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.product-card__thumb-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-faint);
+    font-size: 3rem;
+}
+
+.product-card__stock-flag {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: #fff;
+}
+
+.product-card__inactive-flag {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    font-size: 0.85rem;
+}
+
+.product-card__body {
+    padding: 0.9rem 1rem 0.5rem;
+    flex: 1;
+}
+
+.product-card__ref code {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+.product-card__name {
+    display: block;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text);
+    text-decoration: none;
+    margin: 0.15rem 0;
+    line-height: 1.25;
+}
+
+.product-card__name:hover {
+    color: var(--copper);
+}
+
+.product-card__brand {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+}
+
+.product-card__meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+}
+
+.product-card__stock {
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.product-card__price {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--text);
+}
+
+.product-card__actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.4rem;
+    padding: 0.6rem;
+    border-top: 1px solid var(--border);
+}
+
+.product-card__actions .btn,
+.product-card__actions form {
+    margin: 0;
+}
+
+.product-card__actions .btn {
+    width: 100%;
+    /* Cibles tactiles généreuses pour utilisation sur iPad. */
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+    font-size: 1rem;
+}
+
+@media (max-width: 767.98px) {
+    .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 0.85rem;
+    }
+}
+
 /* Colonnes triables */
 th[data-sort] {
     cursor: pointer;

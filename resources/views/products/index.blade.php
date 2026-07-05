@@ -109,28 +109,11 @@
   </div>
 </div>
 
-<div class="table-card" id="productsTableWrapper">
-  <div class="table-responsive">
-    <table class="table table-hover mb-0">
-      <thead>
-        <tr>
-          <th style="width:50px"></th>
-          <th>Réf.</th>
-          <th>Produit</th>
-          <th>Catégorie</th>
-          <th class="text-end">Prix vente</th>
-          <th class="text-center">Stock</th>
-          <th>Alerte</th>
-          <th>Statut</th>
-          <th class="text-end">Actions</th>
-        </tr>
-      </thead>
-      @include('products.partials.table', ['products' => $products])
-    </table>
-  </div>
-  <div id="paginationWrapper">
-    @include('products.partials.pagination', ['products' => $products])
-  </div>
+<div id="productsGridWrapper">
+  @include('products.partials.grid', ['products' => $products])
+</div>
+<div id="paginationWrapper">
+  @include('products.partials.pagination', ['products' => $products])
 </div>
 @endsection
 
@@ -139,7 +122,7 @@
 (function () {
   const form = document.getElementById('filterForm');
   const searchInput = document.getElementById('searchInput');
-  const tbody = document.querySelector('#productsTableWrapper tbody');
+  const gridWrapper = document.getElementById('productsGridWrapper');
   const paginationWrapper = document.getElementById('paginationWrapper');
   let debounceTimer;
 
@@ -156,8 +139,8 @@
       return response.json();
     })
     .then(data => {
-      if (data.html && tbody) {
-        tbody.outerHTML = data.html;
+      if (data.html && gridWrapper) {
+        gridWrapper.innerHTML = data.html;
       }
       if (data.pagination && paginationWrapper) {
         paginationWrapper.innerHTML = data.pagination;
