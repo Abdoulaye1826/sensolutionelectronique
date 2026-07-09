@@ -9,7 +9,7 @@ return [
     // Les deux représentent la même ligne ; whatsapp_number est au format international
     // sans "+" ni espaces, tel qu'attendu par les liens wa.me.
     'phone' => env('COMPANY_PHONE', '+221 78 192 85 88'),
-    'whatsapp_number' => env('COMPANY_WHATSAPP_NUMBER', '221763651763'),
+    'whatsapp_number' => env('COMPANY_WHATSAPP_NUMBER', '221781928588'),
 
     'address_line1' => env('COMPANY_ADDRESS_LINE1', 'Médina Rue 29 x Blaise Diagne'),
     'address_line2' => env('COMPANY_ADDRESS_LINE2', 'Dakar, Sénégal'),
