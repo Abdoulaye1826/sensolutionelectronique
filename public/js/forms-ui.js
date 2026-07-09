@@ -1,5 +1,5 @@
 /**
- * Mboup Gaming SI — UI des formulaires (ajout/modification)
+ * Sen Solution Electronique SI — UI des formulaires (ajout/modification)
  *
  * Fournit, sans dépendance externe :
  *  - un système de toasts de confirmation,

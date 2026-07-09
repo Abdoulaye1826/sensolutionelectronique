@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mboup Gaming — Devis {{ $quote->quote_number }}</title>
+  <title>Sen Solution Electronique — Devis {{ $quote->quote_number }}</title>
   <style>
     /* Même charte visuelle "encre" que documents/sale_document.blade.php,
        pour rester cohérent entre devis, factures et bons d'échange. */
@@ -192,10 +192,10 @@
       <div class="brand">
         <div class="brand-row">
           <div class="brand-icon">
-            <img src="{{ $logoSrc }}" alt="Mboup Gaming">
+            <img src="{{ $logoSrc }}" alt="Sen Solution Electronique">
           </div>
           <div>
-            <div class="brand-name">Mboup Gaming</div>
+            <div class="brand-name">Sen Solution Electronique</div>
             <div class="brand-sub">Système d'information</div>
           </div>
         </div>
@@ -300,7 +300,7 @@
     </div>
     <div class="signature-col">
       <div class="signature-line"></div>
-      <p>Cachet et signature Mboup Gaming</p>
+      <p>Cachet et signature Sen Solution Electronique</p>
     </div>
   </div>
 

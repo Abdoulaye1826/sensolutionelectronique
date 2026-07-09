@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Routes Web — Mboup Gaming SI
+| Routes Web — Sen Solution Electronique SI
 |--------------------------------------------------------------------------
 */
 

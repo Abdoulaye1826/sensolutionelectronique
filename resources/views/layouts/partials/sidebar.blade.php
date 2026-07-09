@@ -1,10 +1,10 @@
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-brand">
     <div class="brand-icon">
-      <img src="{{ asset('images/logo.png') }}" alt="Mboup Gaming">
+      <img src="{{ asset('images/logo.png') }}" alt="Sen Solution Electronique">
     </div>
     <div>
-      <div class="brand-text">Mboup Gaming</div>
+      <div class="brand-text">Sen Solution Electronique</div>
       <div class="brand-sub">SI Boutique</div>
     </div>
   </div>
@@ -21,6 +21,6 @@
   </nav>
 
   <div class="sidebar-footer">
-    &copy; {{ date('Y') }} Mboup Gaming SI
+    &copy; {{ date('Y') }} Sen Solution Electronique SI
   </div>
 </aside>

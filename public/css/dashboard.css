@@ -1,5 +1,5 @@
 /* ============================================================
-   Mboup Gaming SI — Dashboard Layout
+   Sen Solution Electronique SI — Dashboard Layout
    Design system : "Circuit / Ledger"
    ============================================================ */
 
@@ -10,16 +10,16 @@
     --navbar-height: 64px;
 
     /* ── Palette principale — Noir & Bleu Marine ─────────────── */
-    --ink: #14283f;
-    --ink-soft: #1c3654;
-    --ink-line: #2c4a6e;
+    --ink: #0f2340;
+    --ink-soft: #17325a;
+    --ink-line: #2a4d78;
 
-    --copper: #4c7ab5;
-    --copper-dark: #4c7ab5;
-    --copper-soft: rgba(30, 58, 95, .14);
+    --copper: #2f6fb0;
+    --copper-dark: #245a92;
+    --copper-soft: rgba(47, 111, 176, .14);
 
-    --circuit-blue: #52504a;
-    --blue-soft: rgba(82, 80, 74, .12);
+    --circuit-blue: #2f8fd1;
+    --blue-soft: rgba(47, 143, 209, .12);
 
     --surface: #f5f6fa;
     --card: #ffffff;
@@ -52,6 +52,31 @@
 }
 
 * { box-sizing: border-box; }
+
+/* ── Boutons Bootstrap harmonisés avec l'accent bleu ─────────── */
+.btn-primary {
+    --bs-btn-bg: var(--copper);
+    --bs-btn-border-color: var(--copper);
+    --bs-btn-hover-bg: var(--copper-dark);
+    --bs-btn-hover-border-color: var(--copper-dark);
+    --bs-btn-active-bg: var(--copper-dark);
+    --bs-btn-active-border-color: var(--copper-dark);
+    --bs-btn-disabled-bg: var(--copper);
+    --bs-btn-disabled-border-color: var(--copper);
+    --bs-btn-focus-shadow-rgb: 47, 111, 176;
+}
+
+.btn-outline-primary {
+    --bs-btn-color: var(--copper);
+    --bs-btn-border-color: var(--copper);
+    --bs-btn-hover-bg: var(--copper);
+    --bs-btn-hover-border-color: var(--copper);
+    --bs-btn-active-bg: var(--copper-dark);
+    --bs-btn-active-border-color: var(--copper-dark);
+    --bs-btn-disabled-color: var(--copper);
+    --bs-btn-disabled-border-color: var(--copper);
+    --bs-btn-focus-shadow-rgb: 47, 111, 176;
+}
 
 body {
     background-color: var(--surface);

@@ -8,7 +8,7 @@
     $documentType = $isEchange ? "Bon d'échange" : 'Facture';
     $documentNumber = $isEchange ? $sale->exchange_voucher_number : ($invoice->invoice_number ?? $sale->sale_number);
   @endphp
-  <title>Mboup Gaming — {{ $documentType }} {{ $documentNumber }}</title>
+  <title>Sen Solution Electronique — {{ $documentType }} {{ $documentNumber }}</title>
   <style>
     /* ============================================================
        Modèle économique en encre : pas de fonds colorés ni de
@@ -269,10 +269,10 @@
       <div class="brand">
         <div class="brand-row">
           <div class="brand-icon">
-            <img src="{{ $logoSrc }}" alt="Mboup Gaming">
+            <img src="{{ $logoSrc }}" alt="Sen Solution Electronique">
           </div>
           <div>
-            <div class="brand-name">Mboup Gaming</div>
+            <div class="brand-name">Sen Solution Electronique</div>
             <div class="brand-sub">Système d'information</div>
           </div>
         </div>
@@ -482,7 +482,7 @@
     </div>
     <div class="signature-col">
       <div class="signature-line"></div>
-      <p>Cachet et signature Mboup Gaming</p>
+      <p>Cachet et signature Sen Solution Electronique</p>
     </div>
   </div>
 
