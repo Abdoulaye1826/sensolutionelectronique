@@ -14,7 +14,7 @@
         <div class="auth-card">
             <div class="auth-logo">
                 <div class="logo-icon">
-                    <img src="{{ asset('images/logo.jpeg') }}" alt="Mboup Gaming">
+                    <img src="{{ asset('images/logo.png') }}" alt="Mboup Gaming">
                 </div>
                 <h4 class="fw-bold mb-0">Mboup Gaming</h4>
                 <small class="text-muted">Système d'information</small>

@@ -804,7 +804,7 @@ th[data-sort][aria-sort="descending"]::after { content: "↓"; color: var(--copp
     display: flex;
     align-items: center;
     justify-content: center;
-    background-image: url("/images/pp.jpeg");
+    background-image: url("/images/page1.jpeg");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;

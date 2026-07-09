@@ -239,10 +239,10 @@
   // restait vide dans le PDF envoyé/téléchargé, alors qu'il s'affichait
   // normalement dans l'aperçu navigateur (simple HTML, pas de DomPDF).
   // Le data URI fonctionne à l'identique dans les deux contextes.
-  $logoPath = public_path('images/logo.jpeg');
+  $logoPath = public_path('images/logo.png');
   $logoSrc = is_file($logoPath)
       ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($logoPath))
-      : asset('images/logo.jpeg');
+      : asset('images/logo.png');
 @endphp
 
 @if(empty($isPdf))

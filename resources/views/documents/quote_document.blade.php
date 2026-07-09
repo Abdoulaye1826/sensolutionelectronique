@@ -163,10 +163,10 @@
   // distantes par défaut, donc le logo restait vide dans le PDF envoyé/
   // téléchargé. Le data URI base64 fonctionne à l'identique dans l'aperçu
   // navigateur et dans le PDF généré par DomPDF.
-  $logoPath = public_path('images/logo.jpeg');
+  $logoPath = public_path('images/logo.png');
   $logoSrc = is_file($logoPath)
       ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($logoPath))
-      : asset('images/logo.jpeg');
+      : asset('images/logo.png');
 @endphp
 
 @if(empty($isPdf))
