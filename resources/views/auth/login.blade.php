@@ -3,6 +3,12 @@
 @section('title', 'Connexion')
 
 @section('content')
+@if(request()->boolean('expired'))
+  <div class="auth-alert-expired mb-4" role="alert">
+    <i class="bi bi-clock-history"></i>
+    <span>Votre session a expiré. Veuillez vous reconnecter.</span>
+  </div>
+@endif
 <form method="POST" action="{{ route('login') }}">
   @csrf
 

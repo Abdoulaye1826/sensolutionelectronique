@@ -41,6 +41,9 @@ Route::get('quotes/{quote}/public-pdf', [QuoteController::class, 'publicPdf'])
 
 Route::middleware(['auth', 'active'])->group(function () {
 
+    // ── Maintien de session (ping AJAX périodique, voir session-keepalive.js) ──
+    Route::get('/keep-alive', fn () => response()->noContent())->name('session.keep-alive');
+
     // ── Dashboard (tous les rôles authentifiés) ─────────────
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 

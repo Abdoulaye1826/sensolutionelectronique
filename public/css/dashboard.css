@@ -897,6 +897,25 @@ th[data-sort][aria-sort="descending"]::after { content: "↓"; color: var(--copp
     color: rgba(255, 255, 255, 0.75) !important;
 }
 
+.auth-alert-expired {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .75rem 1rem;
+    border-radius: 12px;
+    background: rgba(180, 83, 9, 0.28);
+    border: 1px solid rgba(255, 193, 121, 0.4);
+    color: #fff;
+    font-size: .92rem;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.auth-alert-expired i {
+    font-size: 1.1rem;
+    color: #ffd28a;
+    flex-shrink: 0;
+}
+
 .auth-card .input-group-text,
 .auth-card .form-control {
     background: rgba(255, 255, 255, 0.25);

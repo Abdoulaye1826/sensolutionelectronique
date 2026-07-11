@@ -34,6 +34,13 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ asset('js/forms-ui.js') }}"></script>
     <script>
+        window.SessionKeepAliveConfig = {
+            pingUrl: "{{ route('session.keep-alive') }}",
+            loginUrl: "{{ route('login') }}"
+        };
+    </script>
+    <script src="{{ asset('js/session-keepalive.js') }}"></script>
+    <script>
         // Toggle sidebar mobile
         document.getElementById('sidebarToggle')?.addEventListener('click', () => {
             document.getElementById('sidebar').classList.toggle('show');
